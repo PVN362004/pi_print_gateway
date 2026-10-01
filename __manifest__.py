@@ -3,6 +3,8 @@
     'version': '19.0.1.1.0',
     'category': 'Productivity',
     'summary': 'Gửi báo cáo Odoo PDF/ZPL qua Raspberry Pi và CUPS',
+    # Keep README.md as technical documentation without showing it in Apps.
+    'description': ' ',
     'author': 'Nhan',
     'license': 'AGPL-3',
     'depends': ['base_setup', 'web'],
