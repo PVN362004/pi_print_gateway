@@ -1,4 +1,4 @@
-# Cổng in Raspberry Pi cho Odoo 19
+# Raspberry Pi Print Gateway cho Odoo 19
 
 Module gửi các báo cáo `qweb-pdf` và `qweb-text` từ Odoo tới một Raspberry Pi/Linux Gateway. Gateway chọn PDF hoặc ZPL theo hồ sơ máy in, rồi giao file cho CUPS để in.
 
@@ -147,7 +147,7 @@ Không thêm profile này nếu CUPS chưa có queue `Zebra_ZD421`, vì Odoo s�
 
 ## 5. Cài và cấu hình addon trên Odoo
 
-Restart Odoo, cập nhật Apps List và cài ứng dụng **Cổng in Pi**. Nếu chạy bằng lệnh, ví dụ:
+Restart Odoo, cập nhật Apps List và cài ứng dụng **Pi Print Gateway**. Nếu chạy bằng lệnh, ví dụ:
 
 ```bash
 /opt/odoo19_dev/odoo-venv/bin/python \
@@ -160,22 +160,22 @@ Restart Odoo, cập nhật Apps List và cài ứng dụng **Cổng in Pi**. N�
 
 Trong Odoo:
 
-1. Mở **Cổng in Pi → Gateway in → Mới**.
+1. Mở **Pi Print Gateway → Gateway → Mới**.
 2. Điền:
-   - **Tên cổng in**: ví dụ `Brother_printer`.
+   - **Tên Gateway**: ví dụ `Brother_printer`.
    - **Địa chỉ Gateway**: `http://10.119.54.97:8080`.
    - **Khóa API**: API key trong `/etc/pi-print-gateway/config.yml`.
    - **Hồ sơ máy in**: `brother_pdf`.
    - **Thời gian chờ**: `30`.
    - Bỏ chọn **Xác minh chứng chỉ SSL** khi sử dụng `http://`.
 3. Lưu và bấm **Kiểm tra kết nối**.
-4. Mở **Thiết lập → Thiết lập chung → Cổng in Raspberry Pi**.
+4. Mở **Thiết lập → Thiết lập chung → Pi Print Gateway**.
 5. Bật **Chuyển lệnh in qua Gateway**.
 6. Chọn **Gateway mặc định** là `Brother_printer`.
 7. Chọn **Chỉ gửi đến Gateway** để Odoo không tải PDF xuống PDA, hoặc **Gửi đến Gateway và tải file về** nếu muốn nhận thêm bản PDF.
 8. Bấm **Lưu**.
 
-Theo dõi lịch sử tại **Cổng in Pi → Lệnh in**.
+Theo dõi lịch sử tại **Pi Print Gateway → Lệnh in**.
 
 Mở một lệnh in và bấm **In lại** để gửi lại đúng PDF/ZPL đã lưu của lần in đó. Gateway tạo một lệnh mới để theo dõi riêng; lệnh cũ không bị thay đổi. Với các lệnh đã phát sinh trước khi nâng cấp module, hệ thống sẽ tạo lại PDF từ chứng từ gốc nếu có thể.
 
@@ -271,7 +271,7 @@ Không bấm **In lại** cho một lệnh đang ở trạng thái **Chờ kết
 
 ## 8. Vận hành và giám sát
 
-Kiểm tra các lệnh đang chờ trong Odoo bằng menu **Cổng in Pi → Lệnh in**, lọc trạng thái **Chờ kết nối**. Trên Pi dùng:
+Kiểm tra các lệnh đang chờ trong Odoo bằng menu **Pi Print Gateway → Lệnh in**, lọc trạng thái **Chờ kết nối**. Trên Pi dùng:
 
 ```bash
 sudo systemctl status pi-print-gateway --no-pager

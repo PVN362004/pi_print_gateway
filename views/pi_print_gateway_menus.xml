@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_pi_print_gateway_root"
-              name="Cổng in Pi"
+              name="Pi Print Gateway"
               sequence="90"
               groups="base.group_system"/>
     <menuitem id="menu_pi_print_gateway_config"
-              name="Gateway in"
+              name="Gateway"
               parent="menu_pi_print_gateway_root"
               action="action_pi_print_gateway"
               sequence="10"/>

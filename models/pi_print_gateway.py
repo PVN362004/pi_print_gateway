@@ -15,10 +15,10 @@ _logger = logging.getLogger(__name__)
 
 class PiPrintGateway(models.Model):
     _name = 'pi.print.gateway'
-    _description = 'Cổng in Raspberry Pi'
+    _description = 'Raspberry Pi Print Gateway'
     _order = 'sequence, name'
 
-    name = fields.Char(string='Tên cổng in', required=True)
+    name = fields.Char(string='Tên Gateway', required=True)
     sequence = fields.Integer(string='Thứ tự ưu tiên', default=10)
     active = fields.Boolean(string='Đang hoạt động', default=True)
     company_id = fields.Many2one(
@@ -101,7 +101,7 @@ class PiPrintGateway(models.Model):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': _('Cổng in Raspberry Pi'),
+                    'title': _('Pi Print Gateway'),
                     'message': message,
                     'type': notification_type,
                     'sticky': bool(unavailable),
