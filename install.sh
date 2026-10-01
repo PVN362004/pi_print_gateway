@@ -46,7 +46,9 @@ fi
 
 cp "${pi_gateway_source_dir}/systemd/pi-print-gateway.service" /etc/systemd/system/pi-print-gateway.service
 systemctl daemon-reload
-systemctl enable --now cups pi-print-gateway
+systemctl enable --now cups
+systemctl enable pi-print-gateway
+systemctl restart pi-print-gateway
 
 echo "Installation complete."
 echo "Edit ${pi_gateway_config_dir}/config.yml and set the real CUPS queues."

@@ -1,6 +1,6 @@
 {
     'name': 'Pi Print Gateway',
-    'version': '19.0.1.0.3',
+    'version': '19.0.1.1.0',
     'category': 'Productivity',
     'summary': 'Gửi báo cáo Odoo PDF/ZPL qua Raspberry Pi và CUPS',
     'author': 'Nhan',
@@ -8,6 +8,7 @@
     'depends': ['base_setup', 'web'],
     'data': [
         'security/ir.model.access.csv',
+        'odoo_data/pi_print_cron.xml',
         'views/pi_print_gateway_views.xml',
         'views/pi_print_job_views.xml',
         'views/res_config_settings_views.xml',

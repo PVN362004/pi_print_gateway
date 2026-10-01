@@ -14,8 +14,13 @@
                 <field name="user_id"/>
                 <field name="status" widget="badge"
                        decoration-info="status == 'pending'"
+                       decoration-warning="status == 'waiting_network'"
                        decoration-success="status == 'sent'"
                        decoration-danger="status == 'error'"/>
+                <field name="retry_count" optional="hide"/>
+                <field name="next_retry_at" optional="show"/>
+                <button name="action_retry_now" type="object" string="Gửi lại ngay" icon="fa-refresh"
+                        invisible="status != 'waiting_network'"/>
                 <button name="action_reprint" type="object" string="In lại" icon="fa-print" class="btn-primary"/>
             </list>
         </field>
@@ -27,6 +32,8 @@
         <field name="arch" type="xml">
             <form string="Chi tiết lệnh in" create="false" edit="false">
                 <header>
+                    <button name="action_retry_now" type="object" string="Gửi lại ngay" class="btn-secondary" icon="fa-refresh"
+                            invisible="status != 'waiting_network'"/>
                     <button name="action_reprint" type="object" string="In lại" class="btn-primary" icon="fa-print"/>
                 </header>
                 <sheet>
@@ -39,6 +46,9 @@
                             <field name="selected_format"/>
                             <field name="copies"/>
                             <field name="remote_job_id"/>
+                            <field name="retry_count"/>
+                            <field name="next_retry_at" invisible="status != 'waiting_network'"/>
+                            <field name="last_attempt_at"/>
                         </group>
                         <group>
                             <field name="create_date"/>

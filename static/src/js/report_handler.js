@@ -35,7 +35,8 @@ registry.category('ir.actions.report handlers').add(
                 details ? `${result.message} (${details})` : result.message,
                 {
                     title: _t('Print Gateway'),
-                    type: 'success',
+                    type: result.queued ? 'warning' : 'success',
+                    sticky: Boolean(result.queued),
                 }
             );
             return !result.download_original;

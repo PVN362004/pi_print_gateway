@@ -190,12 +190,13 @@ class PiPrintGateway(models.Model):
             }),
         }
         try:
+            job.write({'last_attempt_at': fields.Datetime.now()})
             response = requests.post(
                 self._url('/api/v1/jobs'),
                 headers=self._headers(),
                 data=form_data,
                 files=files,
-                timeout=self.timeout,
+                timeout=(min(self.timeout, 5), self.timeout),
                 verify=self.verify_ssl,
             )
             response.raise_for_status()
@@ -207,6 +208,7 @@ class PiPrintGateway(models.Model):
                 'status': 'sent',
                 'remote_job_id': str(payload.get('job_id') or ''),
                 'selected_format': selected_format,
+                'next_retry_at': False,
                 'response_message': payload.get('message') or payload.get('status') or 'accepted',
             })
             return {
@@ -216,6 +218,31 @@ class PiPrintGateway(models.Model):
                 'printer': payload.get('printer') or job.printer_name,
                 'selected_format': selected_format,
                 'message': payload.get('message') or _('Đã gửi lệnh in đến Gateway.'),
+            }
+        except requests.exceptions.SSLError as error:
+            _logger.exception('Invalid TLS configuration for Pi gateway %s', self.base_url)
+            job.write({
+                'status': 'error',
+                'next_retry_at': False,
+                'response_message': str(error),
+            })
+            return {
+                'handled': False,
+                'gateway_error': True,
+                'job_id': job.id,
+                'message': _('Lỗi chứng chỉ SSL của Gateway: %s') % str(error),
+            }
+        except (requests.ConnectionError, requests.Timeout) as error:
+            _logger.warning('Pi gateway is unreachable; print job %s will be retried: %s', job.id, error)
+            job._schedule_network_retry(error)
+            return {
+                'handled': True,
+                'queued': True,
+                'job_id': job.id,
+                'printer': job.printer_name,
+                'message': _(
+                    'Mất kết nối tới Gateway. Lệnh in đã được lưu vào hàng chờ và sẽ tự in khi kết nối phục hồi.'
+                ),
             }
         except (requests.RequestException, ValueError) as error:
             _logger.exception('Unable to send Odoo report %s to Pi gateway', job.report_name)

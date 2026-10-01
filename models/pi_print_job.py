@@ -1,7 +1,12 @@
+import logging
 from base64 import b64decode, b64encode
+from datetime import timedelta
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+
+_logger = logging.getLogger(__name__)
 
 
 class PiPrintJob(models.Model):
@@ -29,6 +34,7 @@ class PiPrintJob(models.Model):
     status = fields.Selection(
         [
             ('pending', 'Đang chuẩn bị'),
+            ('waiting_network', 'Chờ kết nối'),
             ('sent', 'Đã gửi đến Gateway'),
             ('error', 'Có lỗi'),
         ],
@@ -37,6 +43,82 @@ class PiPrintJob(models.Model):
         readonly=True,
     )
     response_message = fields.Text(string='Phản hồi từ Gateway', readonly=True)
+    retry_count = fields.Integer(string='Số lần thử lại', default=0, readonly=True)
+    next_retry_at = fields.Datetime(string='Thử lại lúc', readonly=True)
+    last_attempt_at = fields.Datetime(string='Lần gửi gần nhất', readonly=True)
+
+    def _schedule_network_retry(self, error):
+        """Keep the rendered payload and retry after a bounded backoff."""
+        self.ensure_one()
+        retry_count = self.retry_count + 1
+        delay_minutes = min(2 ** min(retry_count - 1, 4), 15)
+        self.write({
+            'status': 'waiting_network',
+            'retry_count': retry_count,
+            'next_retry_at': fields.Datetime.now() + timedelta(minutes=delay_minutes),
+            'last_attempt_at': fields.Datetime.now(),
+            'response_message': _(
+                'Không kết nối được Gateway: %(error)s. Hệ thống sẽ tự thử lại sau %(minutes)s phút.'
+            ) % {'error': str(error), 'minutes': delay_minutes},
+        })
+
+    def _retry_job(self):
+        self.ensure_one()
+        if not self.gateway_id.active:
+            self.write({
+                'status': 'error',
+                'next_retry_at': False,
+                'response_message': _('Gateway đã bị vô hiệu hóa; không thể tự gửi lại.'),
+            })
+            return {'handled': False, 'message': self.response_message}
+        files = self._stored_files()
+        if not files:
+            self.write({
+                'status': 'error',
+                'next_retry_at': False,
+                'response_message': _('Không còn file PDF/ZPL đã lưu để gửi lại.'),
+            })
+            return {'handled': False, 'message': self.response_message}
+        self.write({
+            'status': 'pending',
+            'next_retry_at': False,
+            'last_attempt_at': fields.Datetime.now(),
+        })
+        return self.gateway_id.sudo()._send_job_to_gateway(self, files, max(self.copies, 1))
+
+    @api.model
+    def _cron_retry_waiting_jobs(self, limit=10):
+        jobs = self.sudo().search([
+            ('status', '=', 'waiting_network'),
+            ('next_retry_at', '<=', fields.Datetime.now()),
+        ], order='next_retry_at, id', limit=limit)
+        for job in jobs:
+            try:
+                with self.env.cr.savepoint():
+                    job._retry_job()
+            except Exception as error:  # Do not let one corrupt job block the remaining queue.
+                _logger.exception('Unexpected error while retrying Pi print job %s', job.id)
+                job.write({
+                    'status': 'error',
+                    'next_retry_at': False,
+                    'response_message': _('Không thể gửi lại lệnh in: %s') % str(error),
+                })
+
+    def action_retry_now(self):
+        self.ensure_one()
+        result = self.sudo()._retry_job()
+        queued = self.status == 'waiting_network'
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Gửi lại lệnh in'),
+                'message': result.get('message') or self.response_message,
+                'type': 'warning' if queued else ('success' if result.get('handled') else 'danger'),
+                'sticky': queued or not result.get('handled'),
+                'next': {'type': 'ir.actions.act_window_close'},
+            },
+        }
 
     def _stored_files(self):
         self.ensure_one()
@@ -118,7 +200,7 @@ class PiPrintJob(models.Model):
             'status': 'pending',
         })
         result = self.gateway_id.sudo()._send_job_to_gateway(new_job, files, new_job.copies)
-        notification_type = 'success' if result['handled'] else 'danger'
+        notification_type = 'warning' if result.get('queued') else ('success' if result['handled'] else 'danger')
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -126,7 +208,7 @@ class PiPrintJob(models.Model):
                 'title': _('In lại'),
                 'message': result['message'],
                 'type': notification_type,
-                'sticky': not result['handled'],
+                'sticky': bool(result.get('queued')) or not result['handled'],
                 'next': {'type': 'ir.actions.act_window_close'},
             },
         }

@@ -124,6 +124,24 @@ def submit_job(job_id: str) -> None:
             Path(job.stored_path).unlink(missing_ok=True)
 
 
+def existing_source_job(source: str, source_job_id: str, metadata: dict[str, Any]) -> Job | None:
+    """Return an already accepted job when Odoo retries an ambiguous timeout."""
+    if not source_job_id:
+        return None
+    database = metadata.get('database')
+    with LOCK:
+        for job in JOBS.values():
+            job_metadata = job.metadata or {}
+            if (
+                job_metadata.get('source') == source
+                and job_metadata.get('source_job_id') == source_job_id
+                and job_metadata.get('database') == database
+                and job.status in ('queued', 'printing', 'submitted')
+            ):
+                return job
+    return None
+
+
 @app.get('/health')
 @app.get('/api/v1/health')
 def health(
@@ -175,6 +193,16 @@ async def create_job(
             raise ValueError
     except ValueError as error:
         raise HTTPException(status_code=400, detail='metadata must be a JSON object') from error
+
+    duplicate = existing_source_job(source, source_job_id, metadata_dict)
+    if duplicate:
+        response = duplicate.public_dict()
+        response.update({
+            'job_id': duplicate.id,
+            'deduplicated': True,
+            'message': f'Job was already accepted for {duplicate.printer}',
+        })
+        return response
 
     generic_extension = Path(file.filename or '').suffix.lower().lstrip('.') if file else ''
     target_printer = choose_printer(printer, metadata_dict, generic_extension)
