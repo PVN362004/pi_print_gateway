@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from base64 import b64encode
 from urllib.parse import urlparse
 
 import requests
@@ -169,6 +170,66 @@ class PiPrintGateway(models.Model):
 
         return report, docids, files
 
+    def _send_job_to_gateway(self, job, files, copies):
+        """Send already-rendered files to Pi and update the supplied job."""
+        self.ensure_one()
+        form_data = {
+            'source': 'odoo',
+            'source_job_id': str(job.id),
+            'title': job.name,
+            'printer': job.printer_name or '',
+            'copies': str(copies),
+            'format': 'auto',
+            'metadata': json.dumps({
+                'database': self.env.cr.dbname,
+                'company_id': job.company_id.id,
+                'user_id': job.user_id.id,
+                'report_name': job.report_name,
+                'model': job.document_model,
+                'res_ids': [int(record_id) for record_id in (job.document_ids or '').split(',') if record_id.isdigit()],
+            }),
+        }
+        try:
+            response = requests.post(
+                self._url('/api/v1/jobs'),
+                headers=self._headers(),
+                data=form_data,
+                files=files,
+                timeout=self.timeout,
+                verify=self.verify_ssl,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            selected_format = payload.get('selected_format')
+            if selected_format not in ('pdf', 'zpl', 'text'):
+                selected_format = False
+            job.write({
+                'status': 'sent',
+                'remote_job_id': str(payload.get('job_id') or ''),
+                'selected_format': selected_format,
+                'response_message': payload.get('message') or payload.get('status') or 'accepted',
+            })
+            return {
+                'handled': True,
+                'job_id': job.id,
+                'remote_job_id': payload.get('job_id'),
+                'printer': payload.get('printer') or job.printer_name,
+                'selected_format': selected_format,
+                'message': payload.get('message') or _('Đã gửi lệnh in đến Gateway.'),
+            }
+        except (requests.RequestException, ValueError) as error:
+            _logger.exception('Unable to send Odoo report %s to Pi gateway', job.report_name)
+            job.write({
+                'status': 'error',
+                'response_message': str(error),
+            })
+            return {
+                'handled': False,
+                'gateway_error': True,
+                'job_id': job.id,
+                'message': _('Lỗi Gateway: %s') % str(error),
+            }
+
     @api.model
     def _submit_report_action(self, action):
         company = self.env.company
@@ -207,64 +268,15 @@ class PiPrintGateway(models.Model):
             'document_model': report.model,
             'document_ids': ','.join(str(record_id) for record_id in docids),
             'printer_name': printer_name,
+            'copies': copies,
+            'pdf_data': b64encode(files['pdf_file'][1]) if files.get('pdf_file') else False,
+            'pdf_filename': files['pdf_file'][0] if files.get('pdf_file') else False,
+            'zpl_data': b64encode(files['zpl_file'][1]) if files.get('zpl_file') else False,
+            'zpl_filename': files['zpl_file'][0] if files.get('zpl_file') else False,
             'status': 'pending',
         })
-
-        form_data = {
-            'source': 'odoo',
-            'source_job_id': str(job.id),
-            'title': display_name,
-            'printer': printer_name,
-            'copies': str(copies),
-            'format': 'auto',
-            'metadata': json.dumps({
-                'database': self.env.cr.dbname,
-                'company_id': company.id,
-                'user_id': self.env.user.id,
-                'report_name': action.get('report_name'),
-                'model': report.model,
-                'res_ids': docids,
-            }),
-        }
-
-        try:
-            response = requests.post(
-                gateway._url('/api/v1/jobs'),
-                headers=gateway._headers(),
-                data=form_data,
-                files=files,
-                timeout=gateway.timeout,
-                verify=gateway.verify_ssl,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            selected_format = payload.get('selected_format')
-            if selected_format not in ('pdf', 'zpl', 'text'):
-                selected_format = False
-            job.write({
-                'status': 'sent',
-                'remote_job_id': str(payload.get('job_id') or ''),
-                'selected_format': selected_format,
-                'response_message': payload.get('message') or payload.get('status') or 'accepted',
-            })
-            return {
-                'handled': True,
-                'download_original': company.pi_print_behavior == 'gateway_and_download',
-                'job_id': job.id,
-                'remote_job_id': payload.get('job_id'),
-                'printer': payload.get('printer') or printer_name,
-                'selected_format': selected_format,
-                'message': payload.get('message') or _('Print job sent to gateway.'),
-            }
-        except (requests.RequestException, ValueError) as error:
-            _logger.exception('Unable to send Odoo report %s to Pi gateway', action.get('report_name'))
-            job.write({
-                'status': 'error',
-                'response_message': str(error),
-            })
-            return {
-                'handled': False,
-                'gateway_error': True,
-                'job_id': job.id,
-                'message': _('Gateway error: %s. The report will be downloaded instead.') % str(error),
-            }
+        result = gateway._send_job_to_gateway(job, files, copies)
+        result['download_original'] = company.pi_print_behavior == 'gateway_and_download'
+        if not result['handled']:
+            result['message'] = _('%s Báo cáo sẽ được tải về thay vì in.') % result['message']
+        return result

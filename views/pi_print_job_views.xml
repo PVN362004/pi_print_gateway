@@ -16,6 +16,7 @@
                        decoration-info="status == 'pending'"
                        decoration-success="status == 'sent'"
                        decoration-danger="status == 'error'"/>
+                <button name="action_reprint" type="object" string="In lại" icon="fa-print" class="btn-primary"/>
             </list>
         </field>
     </record>
@@ -25,6 +26,9 @@
         <field name="model">pi.print.job</field>
         <field name="arch" type="xml">
             <form string="Chi tiết lệnh in" create="false" edit="false">
+                <header>
+                    <button name="action_reprint" type="object" string="In lại" class="btn-primary" icon="fa-print"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
@@ -33,6 +37,7 @@
                             <field name="gateway_id"/>
                             <field name="printer_name"/>
                             <field name="selected_format"/>
+                            <field name="copies"/>
                             <field name="remote_job_id"/>
                         </group>
                         <group>
@@ -42,6 +47,7 @@
                             <field name="report_name"/>
                             <field name="document_model"/>
                             <field name="document_ids"/>
+                            <field name="reprint_of_id"/>
                         </group>
                     </group>
                     <group string="Phản hồi từ Gateway">

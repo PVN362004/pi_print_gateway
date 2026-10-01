@@ -167,6 +167,8 @@ Trong Odoo:
 
 Theo dõi lịch sử tại **Cổng in Pi → Lệnh in**.
 
+Mở một lệnh in và bấm **In lại** để gửi lại đúng PDF/ZPL đã lưu của lần in đó. Gateway tạo một lệnh mới để theo dõi riêng; lệnh cũ không bị thay đổi. Với các lệnh đã phát sinh trước khi nâng cấp module, hệ thống sẽ tạo lại PDF từ chứng từ gốc nếu có thể.
+
 ## 6. Kiểm tra và xử lý lỗi thường gặp
 
 | Hiện tượng | Nguyên nhân / cách xử lý |
