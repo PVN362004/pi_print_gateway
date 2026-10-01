@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pi_print_job_list" model="ir.ui.view">
+        <field name="name">pi.print.job.list</field>
+        <field name="model">pi.print.job</field>
+        <field name="arch" type="xml">
+            <list string="Lệnh in" create="false" edit="false">
+                <field name="create_date"/>
+                <field name="name"/>
+                <field name="gateway_id"/>
+                <field name="printer_name"/>
+                <field name="selected_format"/>
+                <field name="remote_job_id"/>
+                <field name="user_id"/>
+                <field name="status" widget="badge"
+                       decoration-info="status == 'pending'"
+                       decoration-success="status == 'sent'"
+                       decoration-danger="status == 'error'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pi_print_job_form" model="ir.ui.view">
+        <field name="name">pi.print.job.form</field>
+        <field name="model">pi.print.job</field>
+        <field name="arch" type="xml">
+            <form string="Chi tiết lệnh in" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="status" widget="badge"/>
+                            <field name="gateway_id"/>
+                            <field name="printer_name"/>
+                            <field name="selected_format"/>
+                            <field name="remote_job_id"/>
+                        </group>
+                        <group>
+                            <field name="create_date"/>
+                            <field name="company_id"/>
+                            <field name="user_id"/>
+                            <field name="report_name"/>
+                            <field name="document_model"/>
+                            <field name="document_ids"/>
+                        </group>
+                    </group>
+                    <group string="Phản hồi từ Gateway">
+                        <field name="response_message" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pi_print_job" model="ir.actions.act_window">
+        <field name="name">Lệnh in</field>
+        <field name="res_model">pi.print.job</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

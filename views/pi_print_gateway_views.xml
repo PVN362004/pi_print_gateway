@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pi_print_gateway_list" model="ir.ui.view">
+        <field name="name">pi.print.gateway.list</field>
+        <field name="model">pi.print.gateway</field>
+        <field name="arch" type="xml">
+            <list string="Danh sách Gateway in">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="base_url"/>
+                <field name="default_printer"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="last_check"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pi_print_gateway_form" model="ir.ui.view">
+        <field name="name">pi.print.gateway.form</field>
+        <field name="model">pi.print.gateway</field>
+        <field name="arch" type="xml">
+            <form string="Gateway in Raspberry Pi">
+                <header>
+                    <button name="action_test_connection" type="object" string="Kiểm tra kết nối" class="btn-primary" icon="fa-plug"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Pi khu vực sản xuất"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="base_url" placeholder="http://raspberrypi.local:8080"/>
+                            <field name="api_key" password="True"/>
+                            <field name="default_printer" placeholder="zebra_factory"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="timeout"/>
+                            <field name="verify_ssl"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Trạng thái kết nối">
+                        <field name="last_check" readonly="1"/>
+                        <field name="last_check_message" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pi_print_gateway" model="ir.actions.act_window">
+        <field name="name">Gateway in</field>
+        <field name="res_model">pi.print.gateway</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

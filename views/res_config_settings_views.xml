@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_pi_print_gateway" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.pi.print.gateway</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='general_settings']" position="inside">
+                <block title="Cổng in Raspberry Pi" name="pi_print_gateway_settings">
+                    <setting id="pi_print_gateway_enabled"
+                             string="Chuyển lệnh in qua Gateway"
+                             help="Gửi báo cáo PDF hoặc ZPL từ Odoo, máy tính hay PDA đến Gateway đã chọn."
+                             company_dependent="1">
+                        <field name="pi_print_enabled"/>
+                        <div class="content-group" invisible="not pi_print_enabled">
+                            <div class="mt16 row">
+                                <label for="pi_print_gateway_id" class="col-lg-3 o_light_label"/>
+                                <field name="pi_print_gateway_id" class="oe_inline" domain="[('company_id', '=', company_id)]"/>
+                            </div>
+                            <div class="mt16 row">
+                                <label for="pi_print_behavior" class="col-lg-3 o_light_label"/>
+                                <field name="pi_print_behavior" class="oe_inline"/>
+                            </div>
+                            <div class="mt16">
+                                <button name="%(action_pi_print_gateway)d" type="action" string="Quản lý Gateway" class="btn-link" icon="oi-arrow-right"/>
+                                <button name="%(action_pi_print_job)d" type="action" string="Xem lệnh in" class="btn-link ms-3" icon="oi-arrow-right"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

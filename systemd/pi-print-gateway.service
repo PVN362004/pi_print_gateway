@@ -1,0 +1,22 @@
+[Unit]
+Description=Pi Print Gateway for Odoo
+After=network-online.target cups.service
+Wants=network-online.target cups.service
+
+[Service]
+Type=simple
+User=pi-print
+Group=pi-print
+WorkingDirectory=/opt/pi-print-gateway
+Environment=PI_PRINT_CONFIG=/etc/pi-print-gateway/config.yml
+ExecStart=/opt/pi-print-gateway/.venv/bin/python -m pi_print_gateway
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pi-print-gateway
+
+[Install]
+WantedBy=multi-user.target

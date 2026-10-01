@@ -1,0 +1,43 @@
+# Copy this file to a private location and replace all placeholder values.
+server:
+  host: 0.0.0.0
+  port: 8080
+  api_key: change-me-before-production
+  max_file_size_mb: 50
+  storage_dir: ./data
+  delete_after_submit: false
+
+default_printer: office_a
+
+printers:
+  office_a:
+    type: cups
+    printer_name: YOUR_CUPS_PRINTER
+    format: pdf
+    raw: false
+    extensions: [pdf]
+    options: {}
+
+  zebra_label:
+    type: cups
+    printer_name: YOUR_ZEBRA_CUPS_QUEUE
+    format: zpl
+    raw: true
+    extensions: [zpl]
+    options: {}
+
+  printer_3d:
+    type: octoprint
+    url: http://127.0.0.1
+    api_key: YOUR_OCTOPRINT_API_KEY
+    auto_start: false
+    extensions: [gcode]
+
+rules:
+  - match:
+      extension: pdf
+    printer: office_a
+
+  - match:
+      extension: gcode
+    printer: printer_3d

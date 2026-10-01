@@ -1,0 +1,47 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+  api_key: CHANGE_THIS_TO_A_LONG_RANDOM_KEY
+  max_file_size_mb: 50
+  storage_dir: /var/lib/pi-print-gateway/jobs
+  delete_after_submit: false
+
+default_printer: office_pdf
+
+printers:
+  office_pdf:
+    type: cups
+    printer_name: HP_LaserJet
+    format: pdf
+    raw: false
+    extensions: [pdf]
+    options:
+      media: A4
+      fit-to-page: "true"
+
+  zebra_label:
+    type: cups
+    printer_name: Zebra_ZD421
+    format: zpl
+    raw: true
+    extensions: [zpl]
+    options: {}
+
+  printer_3d:
+    type: octoprint
+    url: http://127.0.0.1
+    api_key: YOUR_OCTOPRINT_API_KEY
+    auto_start: false
+    format: gcode
+    extensions: [gcode]
+
+rules:
+  - match:
+      metadata:
+        report_name: mrp_planner.report_manufacturing_label
+    printer: zebra_label
+
+  - match:
+      metadata:
+        report_name: mrp_planner.report_manufacturing_product_info
+    printer: zebra_label
